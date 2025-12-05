@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 
 interface Task {
   id: string;
@@ -41,8 +41,8 @@ export default function App() {
 
       const json = await r.json();
       setResponse(JSON.stringify(json, null, 2));
-    } catch (err: any) {
-      setResponse("Request failed:\n" + err.message);
+    } catch (err: unknown) {
+      setResponse("Request failed:\n" + (err instanceof Error ? err.message : String(err)));
     }
   };
 

@@ -2,11 +2,19 @@ use serde::{Deserialize, Serialize};
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
 
+enum ActionType {
+    Create,
+    Update,
+    Delete,
+    Archive,
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct Task {
     pub id: String,
     pub title: String,
     pub done: bool,
+    pub time: f64,
 }
 
 #[derive(Serialize, Deserialize)]

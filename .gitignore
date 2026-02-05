@@ -1,74 +1,148 @@
-# ===============================
-# Dependencies
-# ===============================
-node_modules/
-.pnp/
-.pnp.js
+############################
+# OS / Editor junk
+############################
 
-# ===============================
-# Build outputs
-# ===============================
-dist/
-build/
-out/
-.next/
-expo-export/
-coverage/
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
 
-# ===============================
-# Logs
-# ===============================
-logs/
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
+# Linux
+*~
 
-# ===============================
-# Runtime / temp
-# ===============================
-tmp/
-temp/
-.cache/
-.parcel-cache/
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
 
-# ===============================
-# Environment variables
-# ===============================
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+############################
+# Editors / IDEs
+############################
 
-# ===============================
-# IDEs & editors
-# ===============================
-.vscode/*
-!.vscode/extensions.json
-!.vscode/settings.json
+# VS Code
+.vscode/
+*.code-workspace
 
+# JetBrains (IntelliJ / RustRover)
 .idea/
+*.iml
+
+# Vim
 *.swp
 *.swo
 
-# ===============================
-# OS files
-# ===============================
-.DS_Store
-Thumbs.db
+# Emacs
+*~
+\#*\#
+.\#*
 
-# ===============================
-# Expo / React Native
-# ===============================
-.expo/
-.expo-shared/
-android/
-ios/
+############################
+# Rust / Cargo
+############################
+
+# Cargo build output
+target/
+
+# Cargo lock (uncomment if this is a library)
+# Cargo.lock
+
+# Rustfmt backup
+*.rs.bk
+
+# Clippy
+.clippy.toml
+
+############################
+# WASM / Trunk / Leptos
+############################
+
+# Trunk build artifacts
+dist/
+.trunk/
+
+# WASM bindgen output
+pkg/
+
+# Node (if added later for tooling)
+node_modules/
+
+# Source maps
+*.map
+
+############################
+# Environment / Secrets
+############################
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Local config
+config/local.toml
+config/dev.toml
+
+############################
+# Logs
+############################
+
+*.log
+logs/
+
+############################
+# Database / Persistence
+############################
+
+# SQLite
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+############################
+# Android (future-proofing)
+############################
+
+# Android Studio / Gradle
+.android/
+.gradle/
+local.properties
 *.keystore
 
-# ===============================
-# Turborepo / Monorepo
-# ===============================
-.turbo/
+# Build outputs
+*.apk
+*.aab
+build/
+
+############################
+# Tauri (desktop / mobile)
+############################
+
+# Tauri build
+src-tauri/target/
+
+############################
+# Coverage / Profiling
+############################
+
+# Coverage
+coverage/
+*.lcov
+
+# Flamegraphs
+flamegraph.svg
+
+############################
+# Temporary / Misc
+############################
+
+tmp/
+temp/
+.cache/
+
+############################
+# Backup files
+############################
+
+*.bak
+*.old

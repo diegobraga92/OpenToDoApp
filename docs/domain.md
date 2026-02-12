@@ -1,3 +1,85 @@
+# Domain Model
+
+## User
+Represents a person using the system.
+
+Responsibilities:
+- Owns lists
+- Owns tasks indirectly
+
+Attributes:
+- id
+- email
+
+---
+
+## List
+A logical container owned by a user.
+
+Depending on its type, a list may contain tasks or other lists.
+
+Types:
+- todo: contains tasks
+- daily: derives tasks for the current day
+- collection: groups other lists
+
+Rules:
+- A list belongs to one user
+- A todo or daily list contains tasks
+- A collection list contains other lists
+- A list may belong to at most one collection
+
+Attributes:
+- id
+- userId
+- name
+- type
+
+---
+
+## Task
+A unit of work.
+
+Rules:
+- A task belongs to exactly one list
+- A task can be completed or pending
+- A task may have a due date
+- A task may recur
+
+Attributes:
+- id
+- listId
+- title
+- completed
+- order
+- dueDate?
+- recurrence?
+
+Behavior:
+- complete()
+- reopen()
+- reschedule()
+
+---
+
+## Future Concepts
+
+### FocusSession
+Represents a period of focused work.
+
+Notes:
+- May be linked to a task
+- Used for Pomodoro and analytics
+
+### PomodoroCycle
+A structured set of focus sessions and breaks.
+
+Notes:
+- Built on top of FocusSession
+- Not required for basic task usage
+
+# Diagrams
+
 ## Core Domain Relationships
 
 ```mermaid
@@ -54,42 +136,22 @@ stateDiagram-v2
   Pending --> Pending : reschedule()
 ```
 
-# Domain Model
+## Future Domain Extensions
 
-## User
-Represents a person using the system.
+```mermaid
+classDiagram
+  Task "0..1" --> "many" FocusSession : may relate to
+  FocusSession "many" --> "1" PomodoroCycle : part of
 
-Responsibilities:
-- Owns lists
-- Owns tasks indirectly
+  class FocusSession {
+    duration
+    startedAt
+  }
 
-Attributes:
-- id
-- email
-
----
-
-## List
-A logical container owned by a user.
-
-Depending on its type, a list may contain tasks or other lists.
-
-Types:
-- todo: contains tasks
-- daily: derives tasks for the current day
-- collection: groups other lists
-
-Rules:
-- A list belongs to one user
-- A todo or daily list contains tasks
-- A collection list contains other lists
-- A list may belong to at most one collection
-
-Attributes:
-- id
-- userId
-- name
-- type
+  class PomodoroCycle {
+    type
+  }
+```
 
 ### List Diagram
 
@@ -108,66 +170,6 @@ classDiagram
   class List {
     id
     name
-    type
-  }
-```
-
----
-
-## Task
-A unit of work.
-
-Rules:
-- A task belongs to exactly one list
-- A task can be completed or pending
-- A task may have a due date
-- A task may recur
-
-Attributes:
-- id
-- listId
-- title
-- completed
-- order
-- dueDate?
-- recurrence?
-
-Behavior:
-- complete()
-- reopen()
-- reschedule()
-
----
-
-## Future Concepts
-
-### FocusSession
-Represents a period of focused work.
-
-Notes:
-- May be linked to a task
-- Used for Pomodoro and analytics
-
-### PomodoroCycle
-A structured set of focus sessions and breaks.
-
-Notes:
-- Built on top of FocusSession
-- Not required for basic task usage
-
-## Future Domain Extensions
-
-```mermaid
-classDiagram
-  Task "0..1" --> "many" FocusSession : may relate to
-  FocusSession "many" --> "1" PomodoroCycle : part of
-
-  class FocusSession {
-    duration
-    startedAt
-  }
-
-  class PomodoroCycle {
     type
   }
 ```

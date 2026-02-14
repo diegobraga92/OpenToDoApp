@@ -62,25 +62,9 @@ Behavior:
 
 ---
 
-## Future Concepts
+## Diagrams
 
-### FocusSession
-Represents a period of focused work.
-
-Notes:
-- May be linked to a task
-- Used for Pomodoro and analytics
-
-### PomodoroCycle
-A structured set of focus sessions and breaks.
-
-Notes:
-- Built on top of FocusSession
-- Not required for basic task usage
-
-# Diagrams
-
-## Core Domain Relationships
+### Core Domain Relationships
 
 ```mermaid
 classDiagram
@@ -109,50 +93,6 @@ classDiagram
   }
 ```
 
-## List Types
-
-```mermaid
-classDiagram
-  class List {
-    type
-  }
-
-  class TodoList
-  class DailyList
-  class CollectionList
-
-  List <|-- TodoList
-  List <|-- DailyList
-  List <|-- CollectionList
-```
-
-## Task Lifecycle
-
-```mermaid
-stateDiagram-v2
-  [*] --> Pending
-  Pending --> Completed : complete()
-  Completed --> Pending : reopen()
-  Pending --> Pending : reschedule()
-```
-
-## Future Domain Extensions
-
-```mermaid
-classDiagram
-  Task "0..1" --> "many" FocusSession : may relate to
-  FocusSession "many" --> "1" PomodoroCycle : part of
-
-  class FocusSession {
-    duration
-    startedAt
-  }
-
-  class PomodoroCycle {
-    type
-  }
-```
-
 ### List Diagram
 
 ```mermaid
@@ -173,3 +113,54 @@ classDiagram
     type
   }
 ```
+
+### List Types
+
+```mermaid
+classDiagram
+  class List {
+    type
+  }
+
+  class TodoList
+  class DailyList
+  class CollectionList
+
+  List <|-- TodoList
+  List <|-- DailyList
+  List <|-- CollectionList
+```
+
+### Task Lifecycle
+
+```mermaid
+stateDiagram-v2
+  [*] --> Pending
+  Pending --> Completed : complete()
+  Completed --> Pending : reopen()
+  Pending --> Pending : reschedule()
+```
+
+## Future Concepts
+
+### FocusSession
+Represents a period of focused work.
+
+Notes:
+- Will not be linked to a task
+- Used for Pomodoro and analytics
+
+### PomodoroCycle
+A structured set of focus sessions and breaks.
+
+Notes:
+- Built on top of FocusSession
+- Not required for basic task usage
+
+### White Noise
+Focus-inducing sounds, that can be attached to the Pomodoro/Focus Sessions
+
+Notes:
+- Multiple types
+- Can start/pause on demand
+- Can automatically run and stop at the same time as Pomodoro sessions

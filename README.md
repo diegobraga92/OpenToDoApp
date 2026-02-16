@@ -1,95 +1,27 @@
 # ToDo App
 
-## Overview
-Cross-platform productivity app with Web and Mobile clients.
+## Project Idea
+1. Simple App with the following types of To Do lists:
+    - Daily (To Do tasks that refresh everyday, for routines or habit-making)
+    - Regular To Dos (Things that need to be done, once checked, that's it)
+    - List of lists (To support categorized lists. E.g: Shopping lists, project ideas, etc)
 
-## Requirements Checklist
+2. App must be accessible through Web (for computer usage) and Android.
+    - It must be able to sync between clients, even with async changes
+    - Ideally, for Android, it should also have widgets for easy to use
 
-### Core Features
-- [ ] **User Authentication**
-  - [ ] User registration with email
-  - [ ] Secure login/logout
-  - [ ] Session management
+3. The project is meant to be hosted in a local server, accessible over LAN.
+    - Since the server won't always be available (e.g. left home), it must be capable of storing changes locally and then syncing when in LAN
+    - Other clients must be able to be updated with the synced changes, even if done at different times
 
-- [ ] **List Management**
-  - [ ] Create Todo lists (standard task lists)
-  - [ ] Create Daily lists (auto-generated daily tasks)
-  - [ ] Create Collection lists (groups of other lists)
-  - [ ] Rename, archive, delete lists
-  - [ ] Hierarchical organization (collections contain lists)
+4. UX must be easy to use in both platforms, and configurable:
+    - Showing checked or disappearing with them must be configurable per list type
+    - For dailys, should have some simple plots, like a graph or a linked list showing how often daily tasks were done, and streaks
+    - Daily must be configurable by days of the week where they will refresh (e.g. Won't bike on weekends)
 
-- [ ] **Task Management**
-  - [ ] Add, edit, delete tasks
-  - [ ] Mark tasks as completed/reopened
-  - [ ] Reorder tasks via drag-and-drop
-  - [ ] Set due dates on tasks
-  - [ ] Set recurrence patterns (daily, weekly, etc.)
+5. Future functionalities
+    - Pomodoro functionality for focus sessions
+    - White noise options for the same reason
+    - Pomodoro can use white noises (e.g. noise runs when focusing, and stops when timer's up)
 
-- [ ] **Daily View**
-  - [ ] Automatic generation of daily tasks from recurring patterns
-  - [ ] Dedicated daily task view
-  - [ ] Completion tracking for daily tasks
-
-- [ ] **Cross-Platform Support**
-  - [ ] Web application (browser-based)
-  - [ ] Mobile applications (iOS/Android)
-  - [ ] Real-time sync across devices
-  - [ ] Offline functionality with sync on reconnect
-
-### Technical Requirements
-- [ ] **Backend (Rust)**
-  - [ ] Modular monolith architecture
-  - [ ] RESTful API endpoints
-  - [ ] Database integration (PostgreSQL/SQLite)
-  - [ ] Authentication middleware
-  - [ ] Domain-driven design structure
-
-- [ ] **Frontend (React Native/TypeScript)**
-  - [ ] Shared core logic between web and mobile
-  - [ ] Responsive UI components
-  - [ ] State management (Redux/Context)
-  - [ ] API client with error handling
-  - [ ] Offline data persistence
-
-- [ ] **Performance & Reliability**
-  - [ ] API response time < 200ms (95th percentile)
-  - [ ] App startup time < 2 seconds
-  - [ ] 99.9% uptime for core services
-  - [ ] Data encryption at rest and in transit
-  - [ ] Protection against common vulnerabilities
-
-### Future Features (Roadmap)
-- [ ] **Phase 2: Focus Tools**
-  - [ ] Pomodoro timer with customizable intervals
-  - [ ] Focus session tracking
-  - [ ] Integration with task completion
-
-- [ ] **Phase 3: Enhanced Productivity**
-  - [ ] White noise/ambient sound player
-  - [ ] Focus session recommendations
-  - [ ] Team collaboration (shared lists)
-
-- [ ] **Phase 4: Analytics**
-  - [ ] Productivity insights and trends
-  - [ ] Time tracking integration
-  - [ ] Goal setting and progress tracking
-
-## Current Status
-- **Backend**: Rust project initialized (Cargo.toml present)
-- **Frontend**: React Native/TypeScript project initialized
-- **Documentation**: Architecture and domain models defined
-
-## Getting Started
-1. **Backend Setup**: `cd backend && cargo run`
-2. **Frontend Setup**: `cd frontend && npm install && npm start`
-3. **Database**: Configure database connection in backend
-
-## Development Priorities
-1. ✅ Project structure and documentation
-2. ⏳ Basic CRUD operations for Users, Lists, Tasks
-3. ⏳ Authentication system
-4. ⏳ Daily list functionality
-5. ⏳ Cross-platform sync
-6. ⏳ Performance optimization
-7. ⏳ Future roadmap features
 

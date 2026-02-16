@@ -24,4 +24,12 @@
     - White noise options for the same reason
     - Pomodoro can use white noises (e.g. noise runs when focusing, and stops when timer's up)
 
+## Stack
+- Stack will be React (front), Rust + Axum (backend), and Kotlin (Android)
+    - Considered using React Native, but dedicated Kotlin App will be more robust, and made more sense since Widgets are a requirement
 
+## Concerns
+- How to store async changes offline in Android version (no backend)?
+- Will need to define a conflict resolution approach
+- Show/hide approach will cause all old tasks to be saved, even if not shown (maybe add some compaction)?
+- Pomodoro and white noises will not connect to tasks, so implementation should be independent

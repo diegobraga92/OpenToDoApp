@@ -1,31 +1,26 @@
-mod routes;
-mod models;
-mod state;
+mod api;
+mod application;
+mod domain;
+mod infrastructure;
 
-use axum::Router;
-use tower_http::cors::{Any, CorsLayer};
+use api::routes::{create_router, AppState};
+use infrastructure::db::init_db;
 use tokio::net::TcpListener;
-use std::net::SocketAddr;
-
-use state::app_state::AppState;
 
 #[tokio::main]
 async fn main() {
-    let cors = CorsLayer::new()
-        .allow_origin(Any)
-        .allow_methods(Any)
-        .allow_headers(Any);
+    // Initialize DB
+    let pool = init_db("sqlite://todo.db").await;
 
-    let state = AppState::new();
+    let state = AppState { pool };
+    let app = create_router(state);
 
-    let app = Router::new()
-        .merge(routes::router(state))
-        .layer(cors);
+    // Bind listener
+    let listener = TcpListener::bind("0.0.0.0:3000")
+        .await
+        .expect("Failed to bind address");
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
-    let listener = TcpListener::bind(addr).await.unwrap();
+    println!("Server running on http://0.0.0.0:3000");
 
-    println!("Backend running on http://{}", addr);
-
-    axum::serve(listener, app).await.unwrap();
+    axum::serve(listener, app).await.expect("Server failed");
 }

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { User, List, Task } from '../types';
+import type { User, List, Task } from '../types';
 import { api } from '../lib/api';
 
 type AppState = {

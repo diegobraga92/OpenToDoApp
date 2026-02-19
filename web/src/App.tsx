@@ -14,32 +14,30 @@ import './App.css';
 export default function App() {
   console.log('APP: Component rendering');
   
-  const { isAuthenticated, fetchLists } = useStore();
+  const isAuthenticated = useStore(state => state.isAuthenticated);
+  const fetchLists = useStore(state => state.fetchLists);
+
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
 
   console.log('APP: isAuthenticated:', isAuthenticated, 'isLoading:', isLoading);
 
   useEffect(() => {
-    console.log('APP: useEffect running');
-    const initializeApp = async () => {
-      try {
-        // Check if user is already authenticated (from localStorage)
-        if (isAuthenticated) {
-          console.log('APP: User is authenticated, fetching lists');
-          await fetchLists();
-        }
-        console.log('APP: Loading complete');
-      } catch (error) {
-        console.error('APP: Error in useEffect:', error);
-        setHasError(true);
-      } finally {
-        setIsLoading(false);
+  const initializeApp = async () => {
+    try {
+      if (isAuthenticated) {
+        await fetchLists();
       }
-    };
-    
+    } catch (error) {
+      setHasError(true);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
     initializeApp();
-  }, [isAuthenticated, fetchLists]);
+  }, [isAuthenticated]); // ❗ remove fetchLists
+
 
   if (hasError) {
     return (

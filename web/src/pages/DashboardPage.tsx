@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Plus, Calendar, TrendingUp, CheckCircle } from 'lucide-react';
 import { useStore } from '../store/useStore';
-import { ListType } from '../types';
+import type { ListType } from '../types';
 import { format } from 'date-fns';
 
 export function DashboardPage() {

@@ -1,182 +1,112 @@
 import type { User, List, Task, ApiResponse } from '../types';
-import { v4 as uuidv4 } from 'uuid';
+
+type RequestMethod = 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
+
+export class ServerUnavailableError extends Error {
+  constructor(message = 'Server is down') {
+    super(message);
+    this.name = 'ServerUnavailableError';
+  }
+}
 
 export class ApiClient {
+  private readonly baseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
+  private readonly requestTimeoutMs = 5000;
+  private token: string | null = null;
+
   constructor() {
-    console.log('API: Using local mock backend');
+    console.log(`API: Using backend at ${this.baseUrl}`);
   }
 
-  // Mock data storage (in real app, this would be IndexedDB)
-  private mockUsers: User[] = [
-    { id: '1', email: 'test@example.com' }
-  ];
+  private async request<T>(
+    path: string,
+    method: RequestMethod = 'GET',
+    body?: unknown
+  ): Promise<ApiResponse<T>> {
+    let response: Response;
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), this.requestTimeoutMs);
 
-  private mockLists: List[] = [
-    {
-      id: '1',
-      userId: '1',
-      name: 'Daily Routine',
-      type: 'daily',
-      config: {
-        daysOfWeek: [1, 2, 3, 4, 5], // Monday-Friday
-        analyticsEnabled: true,
-        showCompleted: true
-      },
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    },
-    {
-      id: '2',
-      userId: '1',
-      name: 'Shopping List',
-      type: 'todo',
-      config: {
-        showCompleted: false,
-        autoArchive: true
-      },
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    },
-    {
-      id: '3',
-      userId: '1',
-      name: 'Project Ideas',
-      type: 'collection',
-      config: {
-        displayStyle: 'grid',
-        sortOrder: 'name'
-      },
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+    try {
+      response = await fetch(`${this.baseUrl}${path}`, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          ...(this.token ? { Authorization: `Bearer ${this.token}` } : {}),
+        },
+        signal: controller.signal,
+        body: body ? JSON.stringify(body) : undefined,
+      });
+    } catch {
+      throw new ServerUnavailableError();
+    } finally {
+      clearTimeout(timeoutId);
     }
-  ];
 
-  private mockTasks: Task[] = [
-    {
-      id: '1',
-      listId: '1',
-      title: 'Morning exercise',
-      completed: false,
-      order: 1,
-      recurrence: 'daily',
-      streakCount: 5,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    },
-    {
-      id: '2',
-      listId: '1',
-      title: 'Read 30 minutes',
-      completed: true,
-      order: 2,
-      recurrence: 'daily',
-      streakCount: 3,
-      completedAt: new Date().toISOString(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    },
-    {
-      id: '3',
-      listId: '2',
-      title: 'Buy groceries',
-      completed: false,
-      order: 1,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+    const text = await response.text();
+    const parsed = text ? (JSON.parse(text) as unknown) : null;
+
+    if (!response.ok) {
+      const errorMessage =
+        typeof parsed === 'object' &&
+        parsed !== null &&
+        'message' in parsed &&
+        typeof (parsed as { message: unknown }).message === 'string'
+          ? (parsed as { message: string }).message
+          : `Request failed: ${response.status} ${response.statusText}`;
+
+      throw new Error(errorMessage);
     }
-  ];
+
+    if (
+      typeof parsed === 'object' &&
+      parsed !== null &&
+      'data' in parsed &&
+      'success' in parsed
+    ) {
+      return parsed as ApiResponse<T>;
+    }
+
+    return {
+      data: parsed as T,
+      success: true,
+    };
+  }
 
   // Auth endpoints
   async login(email: string, password: string): Promise<ApiResponse<{ token: string; user: User }>> {
-    void password;
-    // Mock login - in real app, this would call the backend
-    const user = this.mockUsers.find(u => u.email === email);
-    if (!user) {
-      throw new Error('User not found');
-    }
-    
-    return {
-      data: {
-        token: 'mock-jwt-token',
-        user
-      },
-      success: true
-    };
+    const result = await this.request<{ token: string; user: User }>('/auth/login', 'POST', {
+      email,
+      password,
+    });
+    this.token = result.data.token;
+    return result;
   }
 
   // List endpoints
   async getLists(): Promise<ApiResponse<List[]>> {
-    return {
-      data: this.mockLists,
-      success: true
-    };
+    return this.request<List[]>('/lists');
+  }
+
+  async createList(list: Omit<List, 'id' | 'createdAt' | 'updatedAt'>): Promise<ApiResponse<List>> {
+    return this.request<List>('/lists', 'POST', list);
   }
 
   // Task endpoints
   async getTasks(listId: string): Promise<ApiResponse<Task[]>> {
-    const tasks = this.mockTasks.filter(t => t.listId === listId);
-    return {
-      data: tasks,
-      success: true
-    };
+    return this.request<Task[]>(`/lists/${listId}/tasks`);
   }
 
   async createTask(task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>): Promise<ApiResponse<Task>> {
-    const newTask: Task = {
-      ...task,
-      id: uuidv4(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    
-    this.mockTasks.push(newTask);
-    
-    return {
-      data: newTask,
-      success: true
-    };
-  }
-
-  async updateTask(id: string, updates: Partial<Task>): Promise<ApiResponse<Task>> {
-    const index = this.mockTasks.findIndex(t => t.id === id);
-    if (index === -1) {
-      throw new Error('Task not found');
-    }
-    
-    this.mockTasks[index] = {
-      ...this.mockTasks[index],
-      ...updates,
-      updatedAt: new Date().toISOString()
-    };
-    
-    return {
-      data: this.mockTasks[index],
-      success: true
-    };
+    return this.request<Task>('/tasks', 'POST', task);
   }
 
   async completeTask(id: string): Promise<ApiResponse<Task>> {
-    const task = this.mockTasks.find(t => t.id === id);
-    if (!task) {
-      throw new Error('Task not found');
-    }
-    
-    const updates: Partial<Task> = {
-      completed: true,
-      completedAt: new Date().toISOString(),
-      streakCount: (task.streakCount || 0) + 1
-    };
-    
-    return this.updateTask(id, updates);
+    return this.request<Task>(`/tasks/${id}/complete`, 'PATCH');
   }
 
   async reopenTask(id: string): Promise<ApiResponse<Task>> {
-    const updates: Partial<Task> = {
-      completed: false,
-      completedAt: undefined
-    };
-    
-    return this.updateTask(id, updates);
+    return this.request<Task>(`/tasks/${id}/reopen`, 'PATCH');
   }
 }
 

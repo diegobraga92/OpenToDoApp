@@ -4,8 +4,8 @@ import { useStore } from '../store/useStore';
 import { CheckCircle, AlertCircle } from 'lucide-react';
 
 export function LoginPage() {
-  const [email, setEmail] = useState('test@example.com');
-  const [password, setPassword] = useState('password');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { login, error, clearError } = useStore();
   const navigate = useNavigate();
@@ -92,7 +92,7 @@ export function LoginPage() {
 
             <div className="text-sm">
               <p className="text-gray-600">
-                Use <code className="bg-gray-100 px-1 py-0.5 rounded">test@example.com</code> / <code className="bg-gray-100 px-1 py-0.5 rounded">password</code> to login
+                Sign in with your backend credentials (configured on your server).
               </p>
             </div>
 

@@ -1,42 +1,32 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import { Layout, Sidebar, Header, MainContent } from './components/Layout';
 import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
-import { ListPage } from './pages/ListPage';
-import { DailyPage } from './pages/DailyPage';
-import { AnalyticsPage } from './pages/AnalyticsPage';
-import { SettingsPage } from './pages/SettingsPage';
 import { useStore } from './store/useStore';
-import './App.css';
 
 export default function App() {
-  console.log('APP: Component rendering');
-  
   const isAuthenticated = useStore(state => state.isAuthenticated);
   const fetchLists = useStore(state => state.fetchLists);
 
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
 
-  console.log('APP: isAuthenticated:', isAuthenticated, 'isLoading:', isLoading);
-
   useEffect(() => {
-  const initializeApp = async () => {
-    try {
-      if (isAuthenticated) {
-        await fetchLists();
+    const initializeApp = async () => {
+      try {
+        if (isAuthenticated) {
+          await fetchLists();
+        }
+      } catch {
+        setHasError(true);
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      setHasError(true);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    };
 
     initializeApp();
-  }, [isAuthenticated]); // ❗ remove fetchLists
+  }, [isAuthenticated, fetchLists]);
 
 
   if (hasError) {
@@ -57,88 +47,19 @@ export default function App() {
   }
 
   if (isLoading) {
-    console.log('APP: Showing loading state');
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-lg text-gray-600">Loading OpenToDo App...</div>
       </div>
     );
   }
-
-  console.log('APP: Rendering main app');
-  
   return (
     <Router>
       <Toaster position="top-right" />
       <Routes>
         <Route path="/login" element={!isAuthenticated ? <LoginPage /> : <Navigate to="/" />} />
-        <Route path="/" element={isAuthenticated ? (
-          <Layout>
-            <Sidebar />
-            <div className="flex-1 flex flex-col">
-              <Header />
-              <MainContent>
-                <DashboardPage />
-              </MainContent>
-            </div>
-          </Layout>
-        ) : <Navigate to="/login" />} />
-        <Route path="/list/:listId" element={isAuthenticated ? (
-          <Layout>
-            <Sidebar />
-            <div className="flex-1 flex flex-col">
-              <Header />
-              <MainContent>
-                <ListPage />
-              </MainContent>
-            </div>
-          </Layout>
-        ) : <Navigate to="/login" />} />
-        <Route path="/daily" element={isAuthenticated ? (
-          <Layout>
-            <Sidebar />
-            <div className="flex-1 flex flex-col">
-              <Header />
-              <MainContent>
-                <DailyPage />
-              </MainContent>
-            </div>
-          </Layout>
-        ) : <Navigate to="/login" />} />
-        <Route path="/analytics" element={isAuthenticated ? (
-          <Layout>
-            <Sidebar />
-            <div className="flex-1 flex flex-col">
-              <Header />
-              <MainContent>
-                <AnalyticsPage />
-              </MainContent>
-            </div>
-          </Layout>
-        ) : <Navigate to="/login" />} />
-        <Route path="/settings" element={isAuthenticated ? (
-          <Layout>
-            <Sidebar />
-            <div className="flex-1 flex flex-col">
-              <Header />
-              <MainContent>
-                <SettingsPage />
-              </MainContent>
-            </div>
-          </Layout>
-        ) : <Navigate to="/login" />} />
-        {/* Fallback route for debugging */}
-        <Route path="/debug" element={
-          <div className="min-h-screen p-8 bg-gray-50">
-            <h1 className="text-2xl font-bold mb-4">Debug Page</h1>
-            <p>App is working! Check console for logs.</p>
-            <div className="mt-4 p-4 bg-white rounded shadow">
-              <p>isAuthenticated: {isAuthenticated ? 'true' : 'false'}</p>
-              <p>isLoading: {isLoading ? 'true' : 'false'}</p>
-              <p>hasError: {hasError ? 'true' : 'false'}</p>
-            </div>
-          </div>
-        } />
+        <Route path="/" element={isAuthenticated ? <DashboardPage /> : <Navigate to="/login" />} />
+        <Route path="*" element={<Navigate to={isAuthenticated ? '/' : '/login'} />} />
       </Routes>
     </Router>
   );

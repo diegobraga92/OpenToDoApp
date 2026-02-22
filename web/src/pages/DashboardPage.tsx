@@ -1,238 +1,323 @@
-import { useState } from 'react';
-import { Plus, Calendar, TrendingUp, CheckCircle } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Check, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { addDays, format, isSameDay } from 'date-fns';
 import { useStore } from '../store/useStore';
-import { ListType } from '../types';
-import { format } from 'date-fns';
 
 export function DashboardPage() {
-  const { lists, tasks, createList, createTask, currentListId } = useStore();
+  const { lists, tasks, createList, createTask, completeTask, reopenTask } = useStore();
+
+  const [selectedListId, setSelectedListId] = useState<string>('');
   const [newListName, setNewListName] = useState('');
-  const [newListType, setNewListType] = useState<ListType>('todo');
   const [newTaskTitle, setNewTaskTitle] = useState('');
-  
-  const totalTasks = Object.values(tasks).flat().length;
-  const completedTasks = Object.values(tasks).flat().filter(t => t.completed).length;
-  const today = format(new Date(), 'EEEE, MMMM d');
-  
+  const [newDailyTaskTitle, setNewDailyTaskTitle] = useState('');
+  const [newTodoTaskTitle, setNewTodoTaskTitle] = useState('');
+  const [selectedDailyDate, setSelectedDailyDate] = useState(new Date());
+
+  const todayDate = new Date();
+  const selectedDailyDateLabel = format(selectedDailyDate, 'EEEE, MMMM d');
+
+  const dailyList = useMemo(() => lists.find((list) => list.type === 'daily'), [lists]);
+  const todoList = useMemo(() => lists.find((list) => list.type === 'todo'), [lists]);
+
+  const dailyTasks = useMemo(() => (dailyList ? tasks[dailyList.id] || [] : []), [dailyList, tasks]);
+  const todoTasks = useMemo(() => (todoList ? tasks[todoList.id] || [] : []), [todoList, tasks]);
+
+  const todaysDailyTasks = useMemo(() => {
+    if (!dailyList) return [];
+
+    const dayOfWeek = selectedDailyDate.getDay();
+    const daysOfWeek = dailyList.config.daysOfWeek || [0, 1, 2, 3, 4, 5, 6];
+
+    if (!daysOfWeek.includes(dayOfWeek)) return [];
+    return dailyTasks;
+  }, [dailyList, dailyTasks, selectedDailyDate]);
+
+  const canGoToNextDailyDate = !isSameDay(selectedDailyDate, todayDate);
+
+  const selectableLists = useMemo(() => lists.filter((list) => list.type === 'collection'), [lists]);
+
+  const effectiveSelectedListId = useMemo(() => {
+    if (selectableLists.length === 0) return '';
+    const selectedStillExists = selectableLists.some((list) => list.id === selectedListId);
+    return selectedStillExists ? selectedListId : selectableLists[0].id;
+  }, [selectableLists, selectedListId]);
+
+  const selectedList = useMemo(
+    () => selectableLists.find((list) => list.id === effectiveSelectedListId),
+    [selectableLists, effectiveSelectedListId]
+  );
+
+  const selectedListTasks = useMemo(
+    () => (selectedList ? tasks[selectedList.id] || [] : []),
+    [selectedList, tasks]
+  );
+
   const handleCreateList = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newListName.trim()) return;
-    
-    const config = {
-      showCompleted: true,
-      ...(newListType === 'todo' && { autoArchive: true }),
-      ...(newListType === 'daily' && { 
-        daysOfWeek: [1, 2, 3, 4, 5], // Monday-Friday
-        analyticsEnabled: true 
-      }),
-      ...(newListType === 'collection' && { 
-        displayStyle: 'list',
-        sortOrder: 'name'
-      })
-    };
-    
-    await createList({
-      name: newListName,
-      type: newListType,
-      config
-    });
-    
+
+    await createList(newListName.trim(), 'collection');
     setNewListName('');
   };
-  
+
+  const handleCreateDailyTask = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newDailyTaskTitle.trim() || !dailyList) return;
+
+    await createTask({
+      listId: dailyList.id,
+      title: newDailyTaskTitle,
+      completed: false,
+      order: dailyTasks.length + 1,
+    });
+
+    setNewDailyTaskTitle('');
+  };
+
+  const handleCreateTodoTask = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTodoTaskTitle.trim() || !todoList) return;
+
+    await createTask({
+      listId: todoList.id,
+      title: newTodoTaskTitle,
+      completed: false,
+      order: todoTasks.length + 1,
+    });
+
+    setNewTodoTaskTitle('');
+  };
+
   const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTaskTitle.trim() || !currentListId) return;
-    
+    if (!newTaskTitle.trim() || !selectedList) return;
+
     await createTask({
-      listId: currentListId,
+      listId: selectedList.id,
       title: newTaskTitle,
       completed: false,
-      order: Object.values(tasks).flat().length + 1
+      order: selectedListTasks.length + 1,
     });
-    
+
     setNewTaskTitle('');
   };
-  
+
+  const renderTask = (
+    task: { id: string; title: string; completed: boolean; completedAt?: string },
+    isDaily = false
+  ) => {
+    const isDone = isDaily
+      ? task.completed && !!task.completedAt && isSameDay(new Date(task.completedAt), selectedDailyDate)
+      : task.completed;
+
+    return (
+      <div
+        key={task.id}
+        className="px-4 py-3 flex items-center gap-3 border-b border-gray-100 last:border-b-0"
+      >
+        <button
+          onClick={() => (isDone ? reopenTask(task.id) : completeTask(task.id))}
+          className={`w-5 h-5 rounded-sm border flex items-center justify-center ${
+            isDone ? 'bg-green-500 border-green-500' : 'border-gray-300 hover:border-green-500'
+          }`}
+        >
+          {isDone && <Check className="h-3 w-3 text-white" />}
+        </button>
+        <span className={isDone ? 'text-gray-500 line-through' : 'text-gray-800'}>{task.title}</span>
+      </div>
+    );
+  };
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-800">Dashboard</h1>
-        <p className="text-gray-600 mt-1">{today}</p>
+    <div className="max-w-6xl mx-auto space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <section className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-200">
+            <div className="flex items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => setSelectedDailyDate((prev) => addDays(prev, -1))}
+                className="p-1 rounded-md hover:bg-gray-100 text-gray-600"
+                aria-label="View previous day"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+
+              <h2 className="text-lg font-semibold text-gray-800">Daily</h2>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (!canGoToNextDailyDate) return;
+                  setSelectedDailyDate((prev) => addDays(prev, 1));
+                }}
+                disabled={!canGoToNextDailyDate}
+                className="p-1 rounded-md hover:bg-gray-100 text-gray-600 disabled:opacity-40 disabled:cursor-not-allowed"
+                aria-label="View next day"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+            <p className="text-sm text-gray-500">{selectedDailyDateLabel} · Tasks for your recurring routine</p>
+          </div>
+
+          <form onSubmit={handleCreateDailyTask} className="px-4 py-3 border-b border-gray-200 flex gap-2">
+            <input
+              type="text"
+              value={newDailyTaskTitle}
+              onChange={(e) => setNewDailyTaskTitle(e.target.value)}
+              placeholder="Add daily task"
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <button
+              type="submit"
+              disabled={!newDailyTaskTitle.trim()}
+              className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Plus className="h-4 w-4" />
+            </button>
+          </form>
+
+          <div>
+            {!dailyList ? (
+              <p className="px-4 py-6 text-sm text-gray-500">Daily list is not available.</p>
+            ) : todaysDailyTasks.length === 0 ? (
+              <p className="px-4 py-6 text-sm text-gray-500">No daily tasks for today.</p>
+            ) : (
+              todaysDailyTasks
+                .slice()
+                .sort((a, b) => a.order - b.order)
+                .map((task) => renderTask(task, true))
+            )}
+          </div>
+        </section>
+
+        <section className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-200">
+            <h2 className="text-lg font-semibold text-gray-800">To Do</h2>
+            <p className="text-sm text-gray-500">Main fixed to-do list</p>
+          </div>
+
+          <form onSubmit={handleCreateTodoTask} className="px-4 py-3 border-b border-gray-200 flex gap-2">
+            <input
+              type="text"
+              value={newTodoTaskTitle}
+              onChange={(e) => setNewTodoTaskTitle(e.target.value)}
+              placeholder="Add to do task"
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+            />
+            <button
+              type="submit"
+              disabled={!newTodoTaskTitle.trim()}
+              className="px-3 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Plus className="h-4 w-4" />
+            </button>
+          </form>
+
+          <div>
+            {!todoList ? (
+              <p className="px-4 py-6 text-sm text-gray-500">To Do list is not available.</p>
+            ) : todoTasks.length === 0 ? (
+              <p className="px-4 py-6 text-sm text-gray-500">No to do tasks yet.</p>
+            ) : (
+              todoTasks
+                .slice()
+                .sort((a, b) => a.order - b.order)
+                .map((task) => renderTask(task))
+            )}
+          </div>
+        </section>
       </div>
-      
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white rounded-lg shadow p-4">
-          <div className="flex items-center">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <Calendar className="h-6 w-6 text-blue-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm text-gray-500">Total Lists</p>
-              <p className="text-2xl font-bold text-gray-800">{lists.length}</p>
-            </div>
+
+      <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden grid grid-cols-1 lg:grid-cols-12 gap-0">
+        <aside className="lg:col-span-4 xl:col-span-3 h-fit min-w-0 border-b lg:border-b-0 lg:border-r border-gray-200">
+          <div className="px-4 py-3 border-b border-gray-200">
+            <h2 className="text-lg font-semibold text-gray-800">List of Lists</h2>
+            <p className="text-sm text-gray-500">Create or select a categorized list</p>
           </div>
-        </div>
-        
-        <div className="bg-white rounded-lg shadow p-4">
-          <div className="flex items-center">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <CheckCircle className="h-6 w-6 text-green-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm text-gray-500">Tasks Completed</p>
-              <p className="text-2xl font-bold text-gray-800">{completedTasks}/{totalTasks}</p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white rounded-lg shadow p-4">
-          <div className="flex items-center">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <TrendingUp className="h-6 w-6 text-purple-600" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm text-gray-500">Completion Rate</p>
-              <p className="text-2xl font-bold text-gray-800">
-                {totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0}%
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Create New List */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Create New List</h2>
-          <form onSubmit={handleCreateList} className="space-y-4">
-            <div>
-              <input
-                type="text"
-                value={newListName}
-                onChange={(e) => setNewListName(e.target.value)}
-                placeholder="List name"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              />
-            </div>
-            <div className="flex space-x-2">
-              {(['todo', 'daily', 'collection'] as ListType[]).map(type => (
-                <button
-                  key={type}
-                  type="button"
-                  onClick={() => setNewListType(type)}
-                  className={`flex-1 px-3 py-2 text-sm rounded-md ${
-                    newListType === type
-                      ? 'bg-primary-100 text-primary-700 border border-primary-300'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  {type === 'todo' && '📝 Todo'}
-                  {type === 'daily' && '🔄 Daily'}
-                  {type === 'collection' && '📁 Collection'}
-                </button>
-              ))}
-            </div>
+
+          <form onSubmit={handleCreateList} className="px-4 py-3 border-b border-gray-200 flex items-center gap-2 min-w-0">
+            <input
+              type="text"
+              value={newListName}
+              onChange={(e) => setNewListName(e.target.value)}
+              placeholder="New list name"
+              className="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
             <button
               type="submit"
               disabled={!newListName.trim()}
-              className="w-full flex items-center justify-center px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-none px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              aria-label="Create list"
             >
-              <Plus className="h-4 w-4 mr-2" />
-              Create List
+              <Plus className="h-4 w-4" />
             </button>
           </form>
-        </div>
-        
-        {/* Quick Add Task */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Quick Add Task</h2>
-          <form onSubmit={handleCreateTask} className="space-y-4">
-            <div>
-              <input
-                type="text"
-                value={newTaskTitle}
-                onChange={(e) => setNewTaskTitle(e.target.value)}
-                placeholder="Task title"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              />
-            </div>
-            <div>
-              <select 
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                value={currentListId || ''}
-                onChange={(e) => useStore.getState().setCurrentList(e.target.value || null)}
-              >
-                <option value="">Select a list</option>
-                {lists.map(list => (
-                  <option key={list.id} value={list.id}>
-                    {list.name} ({list.type})
-                  </option>
-                ))}
-              </select>
-            </div>
-            <button
-              type="submit"
-              disabled={!newTaskTitle.trim() || !currentListId}
-              className="w-full flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Task
-            </button>
-          </form>
-        </div>
-      </div>
-      
-      {/* Recent Lists */}
-      <div className="bg-white rounded-lg shadow">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-800">Your Lists</h2>
-        </div>
-        <div className="divide-y divide-gray-200">
-          {lists.map(list => {
-            const listTasks = tasks[list.id] || [];
-            const completed = listTasks.filter(t => t.completed).length;
-            const total = listTasks.length;
-            
-            return (
-              <div 
-                key={list.id} 
-                className="px-6 py-4 hover:bg-gray-50 cursor-pointer"
-                onClick={() => useStore.getState().setCurrentList(list.id)}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <span className="text-xl mr-3">
-                      {list.type === 'todo' && '📝'}
-                      {list.type === 'daily' && '🔄'}
-                      {list.type === 'collection' && '📁'}
-                    </span>
-                    <div>
-                      <h3 className="font-medium text-gray-800">{list.name}</h3>
-                      <p className="text-sm text-gray-500">
-                        {list.type.charAt(0).toUpperCase() + list.type.slice(1)} List • 
-                        {total} task{total !== 1 ? 's' : ''}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm font-medium text-gray-800">
-                      {completed}/{total} completed
-                    </div>
-                    <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden mt-1">
-                      <div 
-                        className="h-full bg-primary-600"
-                        style={{ width: total > 0 ? `${(completed / total) * 100}%` : '0%' }}
-                      />
-                    </div>
-                  </div>
-                </div>
+
+          <div className="py-2">
+            {selectableLists.length === 0 ? (
+              <p className="px-4 py-3 text-sm text-gray-500">No lists yet. Create your first list.</p>
+            ) : (
+              selectableLists.map((list) => (
+                <button
+                  key={list.id}
+                  onClick={() => setSelectedListId(list.id)}
+                  className={`w-full text-left px-4 py-3 border-l-4 transition-colors ${
+                    list.id === effectiveSelectedListId
+                      ? 'border-blue-500 bg-blue-50 text-blue-800'
+                      : 'border-transparent hover:bg-gray-50 text-gray-700'
+                  }`}
+                >
+                  <div className="font-medium">{list.name}</div>
+                  <div className="text-xs text-gray-500 uppercase mt-1">{list.type}</div>
+                </button>
+              ))
+            )}
+          </div>
+        </aside>
+
+        <section className="lg:col-span-8 xl:col-span-9 min-h-[360px] min-w-0">
+          {!selectedList ? (
+            <div className="p-6 text-gray-600">Select or create a list to start adding tasks.</div>
+          ) : (
+            <>
+              <div className="px-4 py-3 border-b border-gray-200">
+                <h2 className="text-lg font-semibold text-gray-800">{selectedList.name}</h2>
+                <p className="text-sm text-gray-500">To Do items for this list</p>
               </div>
-            );
-          })}
-        </div>
+
+              <form onSubmit={handleCreateTask} className="px-4 py-3 border-b border-gray-200 flex gap-2">
+                <input
+                  type="text"
+                  value={newTaskTitle}
+                  onChange={(e) => setNewTaskTitle(e.target.value)}
+                  placeholder={`Add task to ${selectedList.name}`}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+                <button
+                  type="submit"
+                  disabled={!newTaskTitle.trim()}
+                  className="px-3 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  aria-label="Create task"
+                >
+                  <Plus className="h-4 w-4" />
+                </button>
+              </form>
+
+              <div>
+                {selectedListTasks.length === 0 ? (
+                  <p className="px-4 py-6 text-sm text-gray-500">No tasks yet for this list.</p>
+                ) : (
+                  selectedListTasks
+                    .slice()
+                    .sort((a, b) => a.order - b.order)
+                    .map((task) => renderTask(task))
+                )}
+              </div>
+            </>
+          )}
+        </section>
       </div>
     </div>
   );

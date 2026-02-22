@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { User, List, Task } from '../types';
-import { api } from '../lib/api';
+import type { User, List, Task } from '../types';
+import { api, ServerUnavailableError } from '../lib/api';
 
 type AppState = {
   // Auth state
@@ -11,24 +11,19 @@ type AppState = {
   // Data state
   lists: List[];
   tasks: Record<string, Task[]>; // listId -> tasks
-  currentListId: string | null;
   
   // UI state
   isLoading: boolean;
   error: string | null;
+  isServerDown: boolean;
   
   // Actions
   login: (email: string, password: string) => Promise<void>;
-  logout: () => void;
   fetchLists: () => Promise<void>;
-  fetchTasks: (listId: string) => Promise<void>;
-  createList: (list: Omit<List, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => Promise<void>;
-  updateList: (id: string, updates: Partial<List>) => Promise<void>;
+  createList: (name: string, type?: List['type']) => Promise<void>;
   createTask: (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
-  updateTask: (id: string, updates: Partial<Task>) => Promise<void>;
   completeTask: (id: string) => Promise<void>;
   reopenTask: (id: string) => Promise<void>;
-  setCurrentList: (listId: string | null) => void;
   clearError: () => void;
 };
 
@@ -40,9 +35,9 @@ export const useStore = create<AppState>()(
       isAuthenticated: false,
       lists: [],
       tasks: {},
-      currentListId: null,
       isLoading: false,
       error: null,
+      isServerDown: false,
 
       // Actions
       login: async (email: string, password: string) => {
@@ -54,27 +49,19 @@ export const useStore = create<AppState>()(
           set({
             user: response.data.user,
             isAuthenticated: true,
+            isServerDown: false,
             isLoading: false
           });
           await get().fetchLists();
         } catch (error: unknown) {
           console.error('STORE: login error', error);
           set({ 
-            error: error instanceof Error ? error.message : 'Login failed', 
+            error: error instanceof Error ? error.message : 'Login failed',
+            isServerDown: error instanceof ServerUnavailableError,
             isLoading: false 
           });
+          throw error;
         }
-      },
-
-      logout: () => {
-        console.log('STORE: logout called');
-        set({
-          user: null,
-          isAuthenticated: false,
-          lists: [],
-          tasks: {},
-          currentListId: null
-        });
       },
 
       fetchLists: async () => {
@@ -83,84 +70,69 @@ export const useStore = create<AppState>()(
         try {
           const response = await api.getLists();
           console.log('STORE: fetchLists successful', response.data.length, 'lists');
-          set({ 
-            lists: response.data,
-            isLoading: false 
-          });
-          
-          // If we have lists but no current list, set the first one
-          if (response.data.length > 0 && !get().currentListId) {
-            console.log('STORE: Setting current list to first list');
-            set({ currentListId: response.data[0].id });
-            await get().fetchTasks(response.data[0].id);
-          }
+          const fetchedLists = response.data;
+
+          // Load tasks for all lists so simplified dashboard has complete data.
+          const taskResponses = await Promise.all(
+            fetchedLists.map(async (list) => {
+              const tasksResponse = await api.getTasks(list.id);
+              return [list.id, tasksResponse.data] as const;
+            })
+          );
+
+          const tasksByList = Object.fromEntries(taskResponses);
+
+          set(() => ({
+            lists: fetchedLists,
+            tasks: tasksByList,
+            isServerDown: false,
+            isLoading: false
+          }));
         } catch (error: unknown) {
           console.error('STORE: fetchLists error', error);
           set({ 
             error: error instanceof Error ? error.message : 'Failed to fetch lists', 
+            isServerDown: error instanceof ServerUnavailableError,
             isLoading: false 
           });
         }
       },
 
-      fetchTasks: async (listId: string) => {
-        console.log('STORE: fetchTasks called for list', listId);
+      createList: async (name, type = 'todo') => {
+        console.log('STORE: createList called', name, type);
         set({ isLoading: true, error: null });
         try {
-          const response = await api.getTasks(listId);
-          console.log('STORE: fetchTasks successful', response.data.length, 'tasks');
-          set(state => ({
+          const userId = get().user?.id;
+          if (!userId) {
+            throw new Error('User not authenticated');
+          }
+
+          const response = await api.createList({
+            userId,
+            name,
+            type,
+            config: {
+              showCompleted: false,
+            },
+          });
+
+          console.log('STORE: createList successful', response.data);
+
+          set((state) => ({
+            lists: [...state.lists, response.data],
             tasks: {
               ...state.tasks,
-              [listId]: response.data
+              [response.data.id]: [],
             },
-            isLoading: false
-          }));
-        } catch (error: unknown) {
-          console.error('STORE: fetchTasks error', error);
-          set({ 
-            error: error instanceof Error ? error.message : 'Failed to fetch tasks', 
-            isLoading: false 
-          });
-        }
-      },
-
-      createList: async (listData) => {
-        console.log('STORE: createList called', listData);
-        set({ isLoading: true, error: null });
-        try {
-          const response = await api.createList(listData);
-          console.log('STORE: createList successful', response.data);
-          set(state => ({
-            lists: [...state.lists, response.data],
-            isLoading: false
+            isServerDown: false,
+            isLoading: false,
           }));
         } catch (error: unknown) {
           console.error('STORE: createList error', error);
-          set({ 
-            error: error instanceof Error ? error.message : 'Failed to create list', 
-            isLoading: false 
-          });
-        }
-      },
-
-      updateList: async (id, updates) => {
-        console.log('STORE: updateList called', id, updates);
-        set({ isLoading: true, error: null });
-        try {
-          const response = await api.updateList(id, updates);
-          console.log('STORE: updateList successful', response.data);
-          set(state => ({
-            lists: state.lists.map(list => 
-              list.id === id ? response.data : list
-            ),
-            isLoading: false
-          }));
-        } catch (error: unknown) {
-          console.error('STORE: updateList error', error);
-          set({ 
-            error: error instanceof Error ? error.message : 'Failed to update list', 
-            isLoading: false 
+          set({
+            error: error instanceof Error ? error.message : 'Failed to create list',
+            isServerDown: error instanceof ServerUnavailableError,
+            isLoading: false,
           });
         }
       },
@@ -178,37 +150,14 @@ export const useStore = create<AppState>()(
               ...state.tasks,
               [listId]: [...(state.tasks[listId] || []), response.data]
             },
+            isServerDown: false,
             isLoading: false
           }));
         } catch (error: unknown) {
           console.error('STORE: createTask error', error);
           set({ 
             error: error instanceof Error ? error.message : 'Failed to create task', 
-            isLoading: false 
-          });
-        }
-      },
-
-      updateTask: async (id, updates) => {
-        console.log('STORE: updateTask called', id, updates);
-        set({ isLoading: true, error: null });
-        try {
-          const response = await api.updateTask(id, updates);
-          console.log('STORE: updateTask successful', response.data);
-          const updatedTask = response.data;
-          
-          set(state => ({
-            tasks: {
-              ...state.tasks,
-              [updatedTask.listId]: (state.tasks[updatedTask.listId] || [])
-                .map(task => task.id === id ? updatedTask : task)
-            },
-            isLoading: false
-          }));
-        } catch (error: unknown) {
-          console.error('STORE: updateTask error', error);
-          set({ 
-            error: error instanceof Error ? error.message : 'Failed to update task', 
+            isServerDown: error instanceof ServerUnavailableError,
             isLoading: false 
           });
         }
@@ -228,12 +177,14 @@ export const useStore = create<AppState>()(
               [updatedTask.listId]: (state.tasks[updatedTask.listId] || [])
                 .map(task => task.id === id ? updatedTask : task)
             },
+            isServerDown: false,
             isLoading: false
           }));
         } catch (error: unknown) {
           console.error('STORE: completeTask error', error);
           set({ 
             error: error instanceof Error ? error.message : 'Failed to complete task', 
+            isServerDown: error instanceof ServerUnavailableError,
             isLoading: false 
           });
         }
@@ -253,22 +204,16 @@ export const useStore = create<AppState>()(
               [updatedTask.listId]: (state.tasks[updatedTask.listId] || [])
                 .map(task => task.id === id ? updatedTask : task)
             },
+            isServerDown: false,
             isLoading: false
           }));
         } catch (error: unknown) {
           console.error('STORE: reopenTask error', error);
           set({ 
             error: error instanceof Error ? error.message : 'Failed to reopen task', 
+            isServerDown: error instanceof ServerUnavailableError,
             isLoading: false 
           });
-        }
-      },
-
-      setCurrentList: (listId) => {
-        console.log('STORE: setCurrentList called', listId);
-        set({ currentListId: listId });
-        if (listId) {
-          get().fetchTasks(listId);
         }
       },
 
@@ -283,8 +228,7 @@ export const useStore = create<AppState>()(
         user: state.user,
         isAuthenticated: state.isAuthenticated,
         lists: state.lists,
-        tasks: state.tasks,
-        currentListId: state.currentListId
+        tasks: state.tasks
       })
     }
   )

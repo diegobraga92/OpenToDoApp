@@ -52,33 +52,8 @@ export interface Task {
   updatedAt: string;
 }
 
-export interface SyncState {
-  entityId: string;
-  entityType: 'user' | 'list' | 'task';
-  localVersion: number;
-  serverVersion: number;
-  pendingChanges: Record<string, unknown>;
-  lastSyncedAt?: string;
-  syncStatus: 'pending' | 'synced' | 'conflicted';
-}
-
 export interface ApiResponse<T> {
   data: T;
   message?: string;
   success: boolean;
-}
-
-export interface PaginatedResponse<T> {
-  items: T[];
-  total: number;
-  page: number;
-  pageSize: number;
-  hasMore: boolean;
-}
-
-export interface DailyAnalytics {
-  date: string;
-  completedTasks: number;
-  totalTasks: number;
-  streak: number;
 }

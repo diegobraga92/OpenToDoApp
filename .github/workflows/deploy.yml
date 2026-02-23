@@ -1,0 +1,42 @@
+name: Build and Push Images
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Build backend
+        run: |
+          docker build \
+            -f backend/Dockerfile \
+            -t ghcr.io/${{ github.repository_owner }}/opentodo-backend:latest \
+            .
+
+      - name: Push backend
+        run: |
+          docker push ghcr.io/${{ github.repository_owner }}/opentodo-backend:latest
+
+      - name: Build web
+        run: |
+          docker build \
+            -f web/Dockerfile \
+            --build-arg VITE_API_URL=http://192.168.3.12:3000 \
+            -t ghcr.io/${{ github.repository_owner }}/opentodo-web:latest \
+            .
+
+      - name: Push web
+        run: |
+          docker push ghcr.io/${{ github.repository_owner }}/opentodo-web:latest

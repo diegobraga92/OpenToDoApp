@@ -1,8 +1,6 @@
 services:
   backend:
-    build:
-      context: .
-      dockerfile: backend/Dockerfile
+    image: ghcr.io/diegobraga92/opentodo-backend:latest
     container_name: opentodo-backend
     ports:
       - "3000:3000"
@@ -11,11 +9,7 @@ services:
     restart: unless-stopped
 
   web:
-    build:
-      context: .
-      dockerfile: web/Dockerfile
-      args:
-        VITE_API_URL: "http://192.168.3.12:3000"
+    image: ghcr.io/diegobraga92/opentodo-web:latest
     container_name: opentodo-web
     ports:
       - "80:80"

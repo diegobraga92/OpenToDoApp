@@ -56,15 +56,25 @@ jobs:
           distribution: temurin
           java-version: 17
 
+      - name: Decode Keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_FILE_BASE64 }}" | base64 -d > release.keystore
+
       - name: Make gradlew executable
         run: chmod +x ./android/gradlew
 
-      - name: Build Release APK
+      - name: Build Signed Release APK
         working-directory: android
-        run: ./gradlew assembleRelease
+        run: |
+          export KEYSTORE_FILE=$GITHUB_WORKSPACE/release.keystore
+          export KEYSTORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}
+          export KEY_ALIAS=${{ secrets.KEY_ALIAS }}
+          export KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}
+          export VERSION_CODE=${{ github.run_number }}
+          ./gradlew assembleRelease
 
       - name: List generated APKs
-        run: find . -name "*.apk"
+        run: find android -name "*.apk"
 
       - name: Delete existing dev release (if exists)
         run: |

@@ -44,7 +44,7 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      contents: write   # REQUIRED to create/delete releases
+      contents: write
 
     steps:
       - uses: actions/checkout@v4
@@ -62,16 +62,13 @@ jobs:
         working-directory: android
         run: ./gradlew assembleRelease
 
-      # Delete old dev release if exists
-      - name: Delete existing dev release
-        uses: dev-drprasad/delete-tag-and-release@v1
-        with:
-          tag_name: dev
+      - name: Delete existing dev release (if exists)
+        run: |
+          gh release delete dev -y || true
+          git push origin :refs/tags/dev || true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true
 
-      # Create new dev release
       - name: Create new dev release
         uses: softprops/action-gh-release@v2
         with:

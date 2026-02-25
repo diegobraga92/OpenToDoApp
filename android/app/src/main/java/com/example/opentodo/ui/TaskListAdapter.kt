@@ -10,12 +10,18 @@ import com.example.opentodo.R
 
 class TaskListAdapter(
     private var tasks: MutableList<UiTask>,
-    private val onTaskChanged: () -> Unit = {}
+    private val onTaskToggled: ((String, Boolean) -> Unit)? = null
 ) : RecyclerView.Adapter<TaskListAdapter.TaskViewHolder>() {
 
-    fun setTasks(newTasks: MutableList<UiTask>) {
-        tasks = newTasks
+    fun setTasks(newTasks: List<UiTask>) {
+        tasks.clear()
+        tasks.addAll(newTasks)
         notifyDataSetChanged()
+    }
+
+    fun addTask(task: UiTask) {
+        tasks.add(task)
+        notifyItemInserted(tasks.size - 1)
     }
 
     class TaskViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -38,7 +44,7 @@ class TaskListAdapter(
         holder.checkBox.isChecked = task.completed
         holder.checkBox.setOnCheckedChangeListener { _, isChecked ->
             task.completed = isChecked
-            onTaskChanged()
+            onTaskToggled?.invoke(task.id, isChecked)
         }
     }
 }

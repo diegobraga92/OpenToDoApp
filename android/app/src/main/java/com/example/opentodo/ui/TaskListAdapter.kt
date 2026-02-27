@@ -10,17 +10,33 @@ import com.example.opentodo.R
 
 class TaskListAdapter(
     private var tasks: MutableList<UiTask>,
-    private val onTaskChanged: () -> Unit = {}
+    private val onTaskToggled: ((String, Boolean) -> Unit)? = null,
+    private val onTaskDeleted: ((String) -> Unit)? = null
 ) : RecyclerView.Adapter<TaskListAdapter.TaskViewHolder>() {
 
-    fun setTasks(newTasks: MutableList<UiTask>) {
-        tasks = newTasks
+    fun setTasks(newTasks: List<UiTask>) {
+        tasks.clear()
+        tasks.addAll(newTasks)
         notifyDataSetChanged()
+    }
+
+    fun addTask(task: UiTask) {
+        tasks.add(task)
+        notifyItemInserted(tasks.size - 1)
+    }
+
+    fun removeTask(taskId: String) {
+        val position = tasks.indexOfFirst { it.id == taskId }
+        if (position != -1) {
+            tasks.removeAt(position)
+            notifyItemRemoved(position)
+        }
     }
 
     class TaskViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val checkBox: CheckBox = view.findViewById(R.id.taskCheckbox)
         val title: TextView = view.findViewById(R.id.taskTitle)
+        val deleteButton: TextView = view.findViewById(R.id.deleteButton)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TaskViewHolder {
@@ -38,7 +54,11 @@ class TaskListAdapter(
         holder.checkBox.isChecked = task.completed
         holder.checkBox.setOnCheckedChangeListener { _, isChecked ->
             task.completed = isChecked
-            onTaskChanged()
+            onTaskToggled?.invoke(task.id, isChecked)
+        }
+
+        holder.deleteButton.setOnClickListener {
+            onTaskDeleted?.invoke(task.id)
         }
     }
 }

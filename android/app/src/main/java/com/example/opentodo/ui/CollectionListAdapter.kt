@@ -12,6 +12,12 @@ class CollectionListAdapter(
     private val onClick: (UiCollection) -> Unit
 ) : RecyclerView.Adapter<CollectionListAdapter.CollectionViewHolder>() {
 
+    fun setCollections(newCollections: List<UiCollection>) {
+        collections.clear()
+        collections.addAll(newCollections)
+        notifyDataSetChanged()
+    }
+
     class CollectionViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val name: TextView = view.findViewById(R.id.collectionName)
     }

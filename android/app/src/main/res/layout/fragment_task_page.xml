@@ -10,7 +10,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:paddingHorizontal="16dp"
-        android:textColor="#111827"
+        android:textColor="?android:attr/textColorPrimary"
         android:textSize="24sp"
         android:textStyle="bold" />
 
@@ -20,7 +20,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
         android:paddingHorizontal="16dp"
-        android:textColor="#6B7280"
+        android:textColor="?android:attr/textColorSecondary"
         android:textSize="14sp" />
 
     <LinearLayout

@@ -24,6 +24,7 @@ type AppState = {
   createTask: (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   completeTask: (id: string) => Promise<void>;
   reopenTask: (id: string) => Promise<void>;
+  deleteTask: (id: string) => Promise<void>;
   clearError: () => void;
 };
 
@@ -211,6 +212,46 @@ export const useStore = create<AppState>()(
           console.error('STORE: reopenTask error', error);
           set({ 
             error: error instanceof Error ? error.message : 'Failed to reopen task', 
+            isServerDown: error instanceof ServerUnavailableError,
+            isLoading: false 
+          });
+        }
+      },
+
+      deleteTask: async (id) => {
+        console.log('STORE: deleteTask called', id);
+        set({ isLoading: true, error: null });
+        try {
+          // First, find the task to get its listId
+          const state = get();
+          let taskListId: string | null = null;
+          for (const [listId, taskList] of Object.entries(state.tasks)) {
+            const task = taskList.find(t => t.id === id);
+            if (task) {
+              taskListId = listId;
+              break;
+            }
+          }
+          
+          if (!taskListId) {
+            throw new Error('Task not found');
+          }
+
+          await api.deleteTask(id);
+          console.log('STORE: deleteTask successful', id);
+          
+          set(state => ({
+            tasks: {
+              ...state.tasks,
+              [taskListId!]: (state.tasks[taskListId!] || []).filter(task => task.id !== id)
+            },
+            isServerDown: false,
+            isLoading: false
+          }));
+        } catch (error: unknown) {
+          console.error('STORE: deleteTask error', error);
+          set({ 
+            error: error instanceof Error ? error.message : 'Failed to delete task', 
             isServerDown: error instanceof ServerUnavailableError,
             isLoading: false 
           });

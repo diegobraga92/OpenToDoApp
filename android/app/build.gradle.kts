@@ -17,7 +17,11 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
-        buildConfigField("String", "BACKEND_URL", "\"http://192.168.3.12:3000/lists\"")
+        
+        // Read backend URL from gradle.properties or use default
+        val backendUrl = project.findProperty("backend.url") as? String ?: "http://192.168.3.12:3000"
+        buildConfigField("String", "BACKEND_URL", "\"$backendUrl\"")
+        println("Configuring backend URL: $backendUrl")
     }
 
     signingConfigs {
@@ -57,4 +61,10 @@ dependencies {
     implementation("androidx.fragment:fragment-ktx:1.6.2")
     implementation("androidx.recyclerview:recyclerview:1.3.2")
     implementation("androidx.viewpager2:viewpager2:1.1.0")
+    
+    // Coroutines for async operations
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    
+    // JSON parsing
+    implementation("org.json:json:20240303")
 }

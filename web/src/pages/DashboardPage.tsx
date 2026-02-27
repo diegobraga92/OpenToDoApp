@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react';
-import { Check, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight, Plus, X } from 'lucide-react';
 import { addDays, format, isSameDay } from 'date-fns';
 import { useStore } from '../store/useStore';
 
 export function DashboardPage() {
-  const { lists, tasks, createList, createTask, completeTask, reopenTask } = useStore();
+  const { lists, tasks, createList, createTask, completeTask, reopenTask, deleteTask } = useStore();
 
   const [selectedListId, setSelectedListId] = useState<string>('');
   const [newListName, setNewListName] = useState('');
@@ -113,17 +113,26 @@ export function DashboardPage() {
     return (
       <div
         key={task.id}
-        className="px-4 py-3 flex items-center gap-3 border-b border-gray-100 last:border-b-0"
+        className="px-4 py-3 flex items-center justify-between gap-3 border-b border-gray-100 last:border-b-0"
       >
+        <div className="flex items-center gap-3 flex-1">
+          <button
+            onClick={() => (isDone ? reopenTask(task.id) : completeTask(task.id))}
+            className={`w-5 h-5 rounded-sm border flex items-center justify-center ${
+              isDone ? 'bg-green-500 border-green-500' : 'border-gray-300 hover:border-green-500'
+            }`}
+          >
+            {isDone && <Check className="h-3 w-3 text-white" />}
+          </button>
+          <span className={isDone ? 'text-gray-500 line-through' : 'text-gray-800'}>{task.title}</span>
+        </div>
         <button
-          onClick={() => (isDone ? reopenTask(task.id) : completeTask(task.id))}
-          className={`w-5 h-5 rounded-sm border flex items-center justify-center ${
-            isDone ? 'bg-green-500 border-green-500' : 'border-gray-300 hover:border-green-500'
-          }`}
+          onClick={() => deleteTask(task.id)}
+          className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
+          aria-label="Delete task"
         >
-          {isDone && <Check className="h-3 w-3 text-white" />}
+          <X className="h-4 w-4" />
         </button>
-        <span className={isDone ? 'text-gray-500 line-through' : 'text-gray-800'}>{task.title}</span>
       </div>
     );
   };

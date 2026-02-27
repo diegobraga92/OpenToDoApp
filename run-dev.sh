@@ -11,13 +11,32 @@ cleanup() {
 
 trap cleanup EXIT INT TERM
 
-echo "Starting backend on http://localhost:3000 ..."
+echo "=============================================="
+echo "Starting OpenToDoApp Development Environment"
+echo "=============================================="
+echo ""
+
+echo "1. Starting backend on http://localhost:3000 ..."
 cargo run --manifest-path "$ROOT_DIR/backend/Cargo.toml" &
 
-echo "Starting web frontend on http://localhost:5173 ..."
+echo "2. Starting web frontend on http://localhost:5173 ..."
 npm --prefix "$ROOT_DIR/web" run dev &
 
 echo ""
-echo "Both services started. Press Ctrl+C to stop both."
+echo "=============================================="
+echo "Development services started!"
+echo "=============================================="
+echo ""
+echo "Backend:      http://localhost:3000"
+echo "Web Frontend: http://localhost:5173"
+echo ""
+echo "For Android development:"
+echo "1. Edit android/gradle.properties and set:"
+echo "   backend.url=http://localhost:3000"
+echo "2. Rebuild Android app:"
+echo "   cd android && ./gradlew assembleDebug"
+echo ""
+echo "Press Ctrl+C to stop all services."
+echo "=============================================="
 
 wait

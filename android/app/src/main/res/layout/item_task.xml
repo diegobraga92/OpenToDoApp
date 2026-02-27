@@ -22,4 +22,17 @@
         android:textColor="?android:attr/textColorPrimary"
         android:textSize="16sp" />
 
+    <TextView
+        android:id="@+id/deleteButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:text="✕"
+        android:textColor="#FF3B30"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:padding="8dp"
+        android:clickable="true"
+        android:focusable="true" />
+
 </LinearLayout>

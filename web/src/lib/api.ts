@@ -108,6 +108,10 @@ export class ApiClient {
   async reopenTask(id: string): Promise<ApiResponse<Task>> {
     return this.request<Task>(`/tasks/${id}/reopen`, 'PATCH');
   }
+
+  async deleteTask(id: string): Promise<ApiResponse<void>> {
+    return this.request<void>(`/tasks/${id}`, 'DELETE');
+  }
 }
 
 // Singleton instance

@@ -1,7 +1,7 @@
 use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
-    routing::{get, patch, post},
+    routing::{delete, get, patch, post},
     Json, Router,
 };
 use chrono::Utc;
@@ -126,6 +126,7 @@ pub fn create_router(state: AppState) -> Router {
         .route("/lists", get(get_lists).post(create_list))
         .route("/lists/:list_id/tasks", get(get_tasks_for_list))
         .route("/tasks", post(create_task))
+        .route("/tasks/:task_id", delete(delete_task))
         .route("/tasks/:task_id/complete", patch(complete_task))
         .route("/tasks/:task_id/reopen", patch(reopen_task))
         .route("/events", post(post_event))
@@ -384,6 +385,33 @@ async fn reopen_task(
     Path(task_id): Path<String>,
 ) -> Result<Json<ApiResponse<TaskDto>>, (StatusCode, Json<ErrorResponse>)> {
     update_task_completion(&state.pool, &task_id, false).await
+}
+
+async fn delete_task(
+    State(state): State<Arc<AppState>>,
+    Path(task_id): Path<String>,
+) -> Result<Json<ApiResponse<()>>, (StatusCode, Json<ErrorResponse>)> {
+    let result = sqlx::query(
+        r#"
+        DELETE FROM tasks
+        WHERE id = ?
+        "#,
+    )
+    .bind(&task_id)
+    .execute(&state.pool)
+    .await
+    .map_err(internal_error)?;
+
+    if result.rows_affected() == 0 {
+        return Err((
+            StatusCode::NOT_FOUND,
+            Json(ErrorResponse {
+                message: "Task not found".to_string(),
+            }),
+        ));
+    }
+
+    Ok(ok(()))
 }
 
 async fn update_task_completion(

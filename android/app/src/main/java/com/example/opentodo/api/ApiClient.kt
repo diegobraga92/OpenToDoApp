@@ -11,7 +11,7 @@ import java.net.URL
 
 object ApiClient {
     private const val TAG = "ApiClient"
-    private const val BASE_URL = "http://192.168.3.12:3000"
+    private val BASE_URL = BuildConfig.BACKEND_URL
     private const val CONNECT_TIMEOUT_MS = 5000
     private const val READ_TIMEOUT_MS = 5000
 
@@ -192,6 +192,31 @@ object ApiClient {
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error reopening task $taskId", e)
+            false
+        }
+    }
+
+    suspend fun deleteTask(taskId: String): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val url = URL("$BASE_URL/tasks/$taskId")
+            val connection = url.openConnection() as HttpURLConnection
+            connection.apply {
+                requestMethod = "DELETE"
+                connectTimeout = CONNECT_TIMEOUT_MS
+                readTimeout = READ_TIMEOUT_MS
+                setRequestProperty("Accept", "application/json")
+            }
+
+            val responseCode = connection.responseCode
+            if (responseCode == HttpURLConnection.HTTP_OK) {
+                Log.d(TAG, "Task $taskId deleted successfully")
+                true
+            } else {
+                Log.e(TAG, "Failed to delete task $taskId. Response code: $responseCode")
+                false
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error deleting task $taskId", e)
             false
         }
     }

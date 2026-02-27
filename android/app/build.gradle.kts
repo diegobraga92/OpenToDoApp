@@ -17,7 +17,11 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
-        buildConfigField("String", "BACKEND_URL", "\"http://192.168.3.12:3000\"")
+        
+        // Read backend URL from gradle.properties or use default
+        val backendUrl = project.findProperty("backend.url") as? String ?: "http://192.168.3.12:3000"
+        buildConfigField("String", "BACKEND_URL", "\"$backendUrl\"")
+        println("Configuring backend URL: $backendUrl")
     }
 
     signingConfigs {

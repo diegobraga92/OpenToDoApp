@@ -52,9 +52,14 @@ class ListsFragment : Fragment(R.layout.fragment_lists_page) {
         view.findViewById<Button>(R.id.addCollectionButton).visibility = View.GONE
 
         // Setup task adapter
-        taskAdapter = TaskListAdapter(mutableListOf()) { taskId, completed ->
-            toggleTaskCompletion(taskId, completed)
-        }
+        taskAdapter = TaskListAdapter(mutableListOf(),
+            onTaskToggled = { taskId, completed ->
+                toggleTaskCompletion(taskId, completed)
+            },
+            onTaskDeleted = { taskId ->
+                deleteTask(taskId)
+            }
+        )
         tasksRecycler.layoutManager = LinearLayoutManager(requireContext())
         tasksRecycler.adapter = taskAdapter
 
@@ -166,6 +171,27 @@ class ListsFragment : Fragment(R.layout.fragment_lists_page) {
             } catch (e: Exception) {
                 Log.e(TAG, "Error toggling task completion", e)
                 Toast.makeText(requireContext(), "Error updating task", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun deleteTask(taskId: String) {
+        scope.launch {
+            try {
+                val success = withContext(Dispatchers.IO) {
+                    ApiClient.deleteTask(taskId)
+                }
+                
+                if (success) {
+                    // Remove from UI
+                    taskAdapter.removeTask(taskId)
+                    Toast.makeText(requireContext(), "Task deleted", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(requireContext(), "Failed to delete task", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error deleting task", e)
+                Toast.makeText(requireContext(), "Error deleting task", Toast.LENGTH_SHORT).show()
             }
         }
     }

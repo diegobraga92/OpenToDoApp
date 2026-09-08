@@ -15,6 +15,7 @@ import {
 import { LibraryBulkScore } from "../components/LibraryBulkScore";
 import { LibraryCsvImport } from "../components/LibraryCsvImport";
 import { FilmIcon } from "../components/icons";
+import Modal from "../components/Modal";
 import { useConfirm } from "../components/useConfirm";
 import { useFeatureFlag } from "../hooks/useFeatureFlag";
 import { useI18n } from "../i18n";
@@ -453,9 +454,12 @@ export default function Library() {
         </div>
       )}
 
-      {/* Add / edit form */}
+      {/* Add / edit item modal */}
       {formOpen && (
-        <div className="card" style={{ maxWidth: 520, padding: "var(--space-md)", marginBottom: "var(--space-md)" }}>
+        <Modal onClose={closeForm} maxWidth={560}>
+          <h3 className="modal-title">
+            {editing ? t("library.editItemTitle") : t("library.addItemTitle")}
+          </h3>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "0.4rem", marginBottom: "0.4rem" }}>
             <input
               className="input"
@@ -572,20 +576,27 @@ export default function Library() {
             />
             <span className="text-sm">{t("library.doneLabel")}</span>
           </label>
-          <div className="flex-center" style={{ gap: "var(--space-sm)" }}>
+          {(create.error ?? update.error) && (
+            <p className="text-sm" style={{ color: "var(--color-danger)", margin: "0 0 0.4rem" }}>
+              {String(create.error ?? update.error)}
+            </p>
+          )}
+          <div className="modal-actions">
             <button
-              className="btn btn-primary btn-sm"
+              className="btn btn-primary"
               disabled={!form.name.trim() || saving}
               onClick={save}
             >
               {saving ? t("common.saving") : editing ? t("library.saveChanges") : t("common.add")}
             </button>
-            <button className="btn btn-ghost btn-sm" onClick={closeForm}>{t("common.cancel")}</button>
+            <button className="btn btn-ghost" onClick={closeForm}>
+              {t("common.cancel")}
+            </button>
           </div>
-        </div>
+        </Modal>
       )}
 
-      {saveError && <p style={{ color: "var(--color-danger)" }}>{String(saveError)}</p>}
+      {!formOpen && saveError && <p style={{ color: "var(--color-danger)" }}>{String(saveError)}</p>}
       {listError && <p style={{ color: "var(--color-danger)" }}>{t("library.loadFailed")}</p>}
       {isLoading && <p style={{ color: "var(--color-text-secondary)" }}>{t("library.loading")}</p>}
       {items.length === 0 && !isLoading && (
@@ -777,7 +788,11 @@ export default function Library() {
         <LibraryBulkScore
           items={scoreTargetItems}
           skippedCount={selected.size - scoreTargetItems.length}
-          onSaved={invalidate}
+          onSaved={() => {
+            invalidate();
+            setBulkScoreOpen(false);
+            setSelected(new Set());
+          }}
           onClose={() => setBulkScoreOpen(false)}
         />
       )}

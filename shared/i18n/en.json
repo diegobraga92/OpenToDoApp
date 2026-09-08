@@ -390,6 +390,9 @@
   "library.bulkScoreSave": "Save {count} {count, plural, one {score} other {scores}}",
   "library.bulkScoreSaved": "✅ Saved {count} {count, plural, one {score} other {scores}}",
   "library.bulkScoreSaveError": "Some scores could not be saved.",
+  "library.bulkScoreNotSavedBody": "{count} {count, plural, one {score} other {scores}} could not be saved.",
+  "library.addItemTitle": "Add item",
+  "library.editItemTitle": "Edit item",
 
   "csv.title": "📥 Import from CSV",
   "csv.intro": "Pick a CSV file, then map its columns to the library fields. Use a fixed value to fill a field for every row (e.g. Type = book).",

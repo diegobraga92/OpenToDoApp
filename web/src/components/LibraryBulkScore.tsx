@@ -6,6 +6,7 @@ import {
   type ScoreCandidate,
 } from "../api/library";
 import { useI18n } from "../i18n";
+import { useToast } from "./toastContext";
 
 const MAX_BATCH_LOOKUP = 100;
 
@@ -41,6 +42,7 @@ interface LibraryBulkScoreProps {
  */
 export function LibraryBulkScore({ items, skippedCount, onSaved, onClose }: LibraryBulkScoreProps) {
   const { t } = useI18n();
+  const { pushToast } = useToast();
 
   // Snapshot the targets once.
   const [targets] = useState<LibraryItem[]>(() => items);
@@ -137,7 +139,18 @@ export function LibraryBulkScore({ items, skippedCount, onSaved, onClose }: Libr
     setSavedCount(ok);
     setSaveErrors(failures);
     setSaving(false);
-    if (ok > 0) onSaved();
+    if (ok > 0) {
+      if (failures.length === 0) {
+        pushToast({ icon: "⭐", title: t("library.bulkScoreSaved", { count: ok }) });
+      } else {
+        pushToast({
+          icon: "⚠️",
+          title: t("library.bulkScoreSaveError"),
+          body: t("library.bulkScoreNotSavedBody", { count: failures.length }),
+        });
+      }
+      onSaved();
+    }
   }
 
   const matchedCount = Object.keys(matches).length;

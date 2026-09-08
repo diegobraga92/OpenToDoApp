@@ -390,6 +390,9 @@
   "library.bulkScoreSave": "Salvar {count} {count, plural, one {nota} other {notas}}",
   "library.bulkScoreSaved": "✅ {count} {count, plural, one {nota salva} other {notas salvas}}",
   "library.bulkScoreSaveError": "Algumas notas não puderam ser salvas.",
+  "library.bulkScoreNotSavedBody": "{count} {count, plural, one {nota não pôde ser salva} other {notas não puderam ser salvas}}.",
+  "library.addItemTitle": "Adicionar item",
+  "library.editItemTitle": "Editar item",
 
   "csv.title": "📥 Importar do CSV",
   "csv.intro": "Escolha um arquivo CSV e mapeie suas colunas para os campos da biblioteca. Use um valor fixo para preencher um campo em todas as linhas (ex.: Tipo = livro).",

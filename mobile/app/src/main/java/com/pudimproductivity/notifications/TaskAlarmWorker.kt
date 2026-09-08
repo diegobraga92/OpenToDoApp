@@ -10,6 +10,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import com.pudimproductivity.R
 import com.pudimproductivity.i18n.Localization
 import com.pudimproductivity.local.LocalDatabase
 
@@ -65,7 +66,8 @@ class TaskAlarmWorker(
                 return
             }
             val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-                .setSmallIcon(android.R.drawable.ic_popup_reminder)
+                .setSmallIcon(R.drawable.ic_notification)
+                .setColor(ContextCompat.getColor(context, R.color.notification_accent))
                 .setContentTitle(title)
                 .setContentText(text)
                 .setAutoCancel(true)

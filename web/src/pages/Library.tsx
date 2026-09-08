@@ -12,6 +12,7 @@ import {
   type MediaType,
   type ScoreCandidate,
 } from "../api/library";
+import { LibraryBulkScore } from "../components/LibraryBulkScore";
 import { LibraryCsvImport } from "../components/LibraryCsvImport";
 import { FilmIcon } from "../components/icons";
 import { useConfirm } from "../components/useConfirm";
@@ -140,11 +141,6 @@ const EMPTY_FORM: CreateLibraryItemRequest = {
   score_source: "",
 };
 
-/**
- * Library: a simple tracker for movies, series, books and games. Shows the
- * name, media type, release year and a done flag, with optional notes and CSV
- * import. Replaces the old Books page.
- */
 export default function Library() {
   const queryClient = useQueryClient();
   const { t } = useI18n();
@@ -157,6 +153,7 @@ export default function Library() {
   const [editing, setEditing] = useState<LibraryItem | null>(null);
   const [form, setForm] = useState<CreateLibraryItemRequest>(EMPTY_FORM);
   const [importOpen, setImportOpen] = useState(false);
+  const [bulkScoreOpen, setBulkScoreOpen] = useState(false);
   const [scoreHits, setScoreHits] = useState<ScoreCandidate[] | null>(null);
   const [scoreSearching, setScoreSearching] = useState(false);
   const [scoreError, setScoreError] = useState<string | null>(null);
@@ -210,6 +207,18 @@ export default function Library() {
         a.subtype.localeCompare(b.subtype) || a.media_type.localeCompare(b.media_type),
     );
   }, [allItems]);
+
+  const itemById = useMemo(() => new Map(allItems.map((item) => [item.id, item])), [allItems]);
+
+  const scoreTargetItems = useMemo(() => {
+    if (selected.size === 0) return [] as LibraryItem[];
+    const out: LibraryItem[] = [];
+    for (const id of selected) {
+      const item = itemById.get(id);
+      if (item && item.score == null) out.push(item);
+    }
+    return out;
+  }, [selected, itemById]);
 
   // Sort the displayed items client-side (the list is fully loaded, no
   // pagination). Missing values are kept at the end regardless of direction.
@@ -597,6 +606,17 @@ export default function Library() {
           style={{ gap: "var(--space-sm)", marginBottom: "var(--space-sm)", flexWrap: "wrap" }}
         >
           <span className="text-sm text-secondary">{t("library.selectedCount", { count: selected.size })}</span>
+          {scoreLookupEnabled && (
+            <button
+              className="btn btn-sm"
+              title={t("library.bulkScoreHint")}
+              disabled={scoreTargetItems.length === 0}
+              onClick={() => setBulkScoreOpen(true)}
+            >
+              {t("library.bulkScoreTitle")}
+              {scoreTargetItems.length > 0 ? ` (${scoreTargetItems.length})` : ""}
+            </button>
+          )}
           <button
             className="btn btn-danger btn-sm"
             disabled={bulkDelete.isPending}
@@ -750,6 +770,15 @@ export default function Library() {
             // The import is done — close the modal so the refreshed list is visible.
             setImportOpen(false);
           }}
+        />
+      )}
+
+      {bulkScoreOpen && scoreTargetItems.length > 0 && (
+        <LibraryBulkScore
+          items={scoreTargetItems}
+          skippedCount={selected.size - scoreTargetItems.length}
+          onSaved={invalidate}
+          onClose={() => setBulkScoreOpen(false)}
         />
       )}
     </div>
